@@ -5,11 +5,9 @@
     <div class="page-header">
       <div class="title-logo">
         <img src="./assets/bma-logo.png" alt="BMA Logo" class="logo" />
-
         <div class="page-title">
           <span class="green">Baliwag Maritime Academy</span>
         </div>
-
         <div class="page-desc">
           <p>Knowledge · Discipline · Excellence</p>
         </div>
@@ -22,14 +20,13 @@
         <i class="fa-solid fa-user-group fa-lg"></i>
         <span>Log in as Applicant</span>
       </button>
-
       <button class="btn-roles" :class="{ active: selectedRole === 'student' }" @click="selectRole('student')">
         <i class="fa-solid fa-user-group fa-lg"></i>
         <span>Log in as Student / Faculty</span>
       </button>
     </div>
 
-    <!-- LoginForm — purpose dropdown is inside LoginForm, inline with the input -->
+    <!-- LoginForm -->
     <LoginForm
       v-if="selectedRole"
       v-model:studentId="studentId"
@@ -46,7 +43,7 @@
     <!-- Welcome message after login -->
     <transition name="banner">
       <div class="welcome-banner" v-if="loggedIn">
-        🎓 Welcome, <strong>{{ studentId }}</strong>! Your session is now active.
+        🎓 Welcome, <strong>{{ username }}</strong>! Your session is now active.
       </div>
     </transition>
 
@@ -54,15 +51,20 @@
     <div class="log-panel" v-if="logs.length">
       <div class="log-header">
         <span class="log-title">Access Log</span>
-        <button class="btn-clear" @click="logs = []">Clear</button>
+          <button class="btn-clear" @click="clearLogs">Clear</button>
       </div>
       <div class="log-list">
-        <div class="log-entry" v-for="(entry, i) in [...logs].reverse()" :key="i" :class="entry.type.toLowerCase()">
-          <span class="log-status" :class="entry.type.toLowerCase()">{{ entry.type }}</span>
-          <span class="log-id">{{ entry.studentId }}</span>
-          <!-- Purpose shown in the log -->
+        <div
+          class="log-entry"
+          v-for="(entry, i) in [...logs].reverse()"
+          :key="i"
+          :class="entry.status.toLowerCase()"
+        >
+          <span class="log-status" :class="entry.status.toLowerCase()">{{ entry.status }}</span>
+          <span class="log-pc">PC{{ entry.pcNumber }}</span>
+          <span class="log-id">{{ entry.username }}</span>
           <span class="log-purpose" v-if="entry.purpose">{{ entry.purpose }}</span>
-          <span class="log-time">{{ entry.time }}</span>
+          <span class="log-time">{{ entry.timeIn }}</span>
         </div>
       </div>
     </div>
@@ -77,9 +79,12 @@
 <script>
 import LoginForm from './components/LoginForm.vue'
 
+const PC_NUMBER = '01'
+const EMAIL_DOMAIN = '@bma.edu.ph'
+
 const REGISTERED_IDS = {
   applicant: ['APP-2026-0001', 'APP-2026-0002', 'APP-2026-0003'],
-  student:   ['24004.jimenez', 'STU-2026-0001', 'STU-2026-0002', 'ADMIN-001', 'STU-2026-0003'],
+  student:   ['23132.cruz', '24004.jimenez', '12345.rivera'],
 }
 
 export default {
@@ -89,8 +94,9 @@ export default {
   data() {
     return {
       selectedRole: null,
-      studentId:    '',
-      purpose:      '',      // ← bound to LoginForm via v-model:purpose
+      studentId:    '',     
+      username:     '',     
+      purpose:      '',
       loggedIn:     false,
       loading:      false,
       errorMsg:     '',
@@ -103,9 +109,10 @@ export default {
     this.focusInput()
     this.focuTimer = setInterval(this.focusInput, 5000)
 
+    // Load saved logs from localStorage
     const savedLogs = localStorage.getItem('bma_logs')
     if (savedLogs) {
-      this.logs = JSON.parse(savedLogs)
+      try { this.logs = JSON.parse(savedLogs) } catch (e) { this.logs = [] }
     }
   },
 
@@ -119,26 +126,43 @@ export default {
       if (el) el.focus()
     },
 
+    cleanUsername(raw) {
+      return raw.trim().replace(EMAIL_DOMAIN, '').trim()
+    },
+
     now() {
       return new Date().toLocaleTimeString('en-PH', { hour12: false })
     },
 
-    addLog(type, id) {
-      const newLog = {
-        type,
-        studentId: id,
-        purpose:   this.purpose || '—',   // ← purpose saved in every log entry
-        time:      this.now(),
+    today() {
+      return new Date().toLocaleDateString('en-PH', {
+        year:  'numeric',
+        month: '2-digit',
+        day:   '2-digit',
+      })
+    },
+
+    // ── Save log entry with all required fields ───────────────────────────
+    addLog(status, username) {
+      const entry = {
+        pcNumber: PC_NUMBER,          // which computer
+        username,                     // cleaned username e.g. 23132.cruz
+        purpose:  this.purpose || '—',
+        timeIn:   this.now(),
+        date:     this.today(),
+        status,                        // SUCCESS | FAILED | LOGOUT
       }
-      this.logs.push(newLog)
+      this.logs.push(entry)
       localStorage.setItem('bma_logs', JSON.stringify(this.logs))
+      return entry
     },
 
     selectRole(role) {
       if (this.loggedIn) return
       this.selectedRole = role
       this.studentId    = ''
-      this.purpose      = ''   // reset purpose when switching roles
+      this.username     = ''
+      this.purpose      = ''
       this.errorMsg     = ''
     },
 
@@ -146,13 +170,13 @@ export default {
       if (this.loggedIn) return
       this.errorMsg = ''
 
-      const id = this.studentId.trim()
-      if (!id) {
-        this.errorMsg = 'Please enter your Student ID.'
+      const cleaned = this.cleanUsername(this.studentId)
+
+      if (!cleaned) {
+        this.errorMsg = 'Please enter your username.'
         return
       }
 
-      // Require purpose before signing in
       if (!this.purpose) {
         this.errorMsg = 'Please select a purpose.'
         return
@@ -162,63 +186,55 @@ export default {
       await new Promise(r => setTimeout(r, 800))
 
       const validIds = REGISTERED_IDS[this.selectedRole] || []
-      if (validIds.includes(id)) {
-        this.studentId = id
+
+      if (validIds.includes(cleaned)) {
+        this.username  = cleaned           // save cleaned version
+        this.studentId = cleaned           // update input display too
         this.loggedIn  = true
-        this.addLog('SUCCESS', id)
+
+        const entry = this.addLog('SUCCESS', cleaned)
+
+        // ── Send to your API ──────────────────────────────────────────────
         try {
-          await fetch('YOUR_SHEET_BEST_URL', {
+          await fetch('YOUR_API_URL_HERE', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              Time:    this.now(),
-              ID:      id,
-              Role:    this.selectedRole,
-              Purpose: this.purpose,
-              Status:  'SUCCESS'
-            })
+            body:    JSON.stringify(entry),
           })
         } catch (err) {
-          console.warn('Offline: Log not synced.')
+          console.warn('Offline — entry not sent to API.')
         }
+
       } else {
-        this.errorMsg = 'Student ID not recognized.'
-        this.addLog('FAILED', id)
+        this.errorMsg = 'Username not recognized. Please try again.'
+        this.addLog('FAILED', cleaned)
       }
 
       this.loading = false
     },
 
     async handleLogout() {
-      const lastId = this.studentId
-      this.addLog('LOGOUT', lastId)
+      const entry = this.addLog('LOGOUT', this.username)
+
       this.loggedIn  = false
       this.studentId = ''
-      this.purpose   = ''   // reset purpose on logout
+      this.username  = ''
+      this.purpose   = ''
       this.errorMsg  = ''
+
+      // ── Send logout to your API ───────────────────────────────────────
       try {
-        await fetch('YOUR_SHEET_BEST_URL', {
+        await fetch('YOUR_API_URL_HERE', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            Time:    this.now(),
-            ID:      lastId,
-            Purpose: this.purpose,
-            Status:  'LOGOUT'
-          })
+          body:    JSON.stringify(entry),
         })
       } catch (e) { }
     },
 
-    exportLogs() {
-      const data = JSON.stringify(this.logs, null, 2)
-      const blob = new Blob([data], { type: 'application/json' })
-      const url  = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href     = url
-      link.download = `BMA-Logs-${new Date().toISOString().split('T')[0]}.json`
-      link.click()
-      URL.revokeObjectURL(url)
+    clearLogs() {
+      this.logs = []
+      localStorage.removeItem('bma_logs')
     },
   },
 }
@@ -294,7 +310,6 @@ body {
   line-height: 1;
   letter-spacing: 0.04em;
 }
-
 .page-title .green { color: #00611E; font-style: normal; }
 
 .page-desc {
@@ -325,7 +340,6 @@ body {
   gap: 12px;
   transition: all 0.2s ease;
 }
-
 .btn-roles.active {
   background: #ffffff;
   color: #00611E;
@@ -347,7 +361,6 @@ body {
   width: 100%;
   text-align: center;
 }
-
 .banner-enter-active { transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
 .banner-leave-active { transition: all 0.2s ease; }
 .banner-enter-from, .banner-leave-to { opacity: 0; transform: translateY(-10px); }
@@ -356,12 +369,11 @@ body {
 .log-panel {
   position: fixed;
   bottom: 25%;
-  right: 50px;
+  right: 30px;
   transform: translateY(-50%);
-  width: 420px;
+  width: 440px;
   background: #0d0f14;
-  border: 2px solid #0d0f14;
-  padding: 20px;
+  padding: 12px 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -413,8 +425,8 @@ body {
 .log-entry {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 6px;
+  padding: 8px 10px;
   background: #161820;
   border-left: 3px solid #2a6ae8;
   animation: logIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -429,10 +441,10 @@ body {
 
 .log-status {
   font-family: 'Poppins', sans-serif;
-  font-size: 9px;
-  letter-spacing: 0.15em;
+  font-size: 8px;
+  letter-spacing: 0.12em;
   font-weight: 600;
-  padding: 2px 6px;
+  padding: 2px 5px;
   text-transform: uppercase;
   flex-shrink: 0;
 }
@@ -440,21 +452,31 @@ body {
 .log-status.failed  { background: rgba(232,75,42,0.2);  color: #f47a5f; }
 .log-status.logout  { background: rgba(85,85,85,0.2);   color: #aaa; }
 
-.log-id {
+.log-pc {
   font-family: 'Poppins', sans-serif;
-  font-size: 12px;
-  color: #ccc;
-  flex: 1;
+  font-size: 9px;
+  font-weight: 600;
+  color: #888;
+  flex-shrink: 0;
+  letter-spacing: 0.06em;
 }
 
-/* ── Purpose badge in log ── */
+.log-id {
+  font-family: 'Poppins', sans-serif;
+  font-size: 11px;
+  color: #ccc;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .log-purpose {
   font-family: 'Poppins', sans-serif;
   font-size: 9px;
   font-weight: 500;
-  letter-spacing: 0.08em;
   color: #7ab6f5;
-  background: rgba(42, 106, 232, 0.15);
+  background: rgba(42,106,232,0.15);
   padding: 2px 6px;
   border-radius: 3px;
   flex-shrink: 0;
@@ -463,7 +485,7 @@ body {
 
 .log-time {
   font-family: 'Poppins', sans-serif;
-  font-size: 10px;
+  font-size: 9px;
   color: #444;
   flex-shrink: 0;
 }

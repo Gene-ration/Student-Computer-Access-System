@@ -11,14 +11,20 @@
 
       <!-- Input + Purpose dropdown inline -->
       <div class="input-row">
+        <input
+          id="studentId"
+          type="text"
+          :value="studentId"
+          :class="{ error: errorMsg, valid: loggedIn }"
+          :placeholder="role === 'applicant' ? 'e.g. APP-2026-0001' : 'e.g. 23132.cruz'"
+          @input="$emit('update:studentId', $event.target.value); $emit('clear-error')"
+          @keyup.enter="$emit('submit')"
+          maxlength="50"
+          :disabled="loggedIn || loading"
+          autocomplete="off"
+        />
 
-        <!-- Input Box -->
-        <input id="studentId" type="text" :value="studentId" :class="{ error: errorMsg, valid: loggedIn }"
-          :placeholder="role === 'applicant' ? 'e.g. APP-2026-0001' : 'e.g. STU-2026-0001'"
-          @input="$emit('update:studentId', $event.target.value); $emit('clear-error')" @keyup.enter="$emit('submit')"
-          maxlength="20" :disabled="loggedIn || loading" autocomplete="off" />
-
-        <!-- Purpose Dropdown inline -->
+        <!-- Purpose Dropdown -->
         <div class="dropdown" ref="dropdownRef">
           <button type="button" @click="toggleDropdown" class="drop-btn" :disabled="loggedIn">
             {{ selectedPurpose || 'Purpose' }}
@@ -39,27 +45,28 @@
 
       </div>
 
-      <!-- Labels row -->
+      <!-- Labels -->
       <div class="labels-row">
-        <label for="studentId">{{ role === 'applicant' ? 'Applicant ID' : 'School ID' }}</label>
+        <label for="studentId">{{ role === 'applicant' ? 'Applicant ID' : 'Username' }}</label>
       </div>
 
       <b><span class="error-msg" v-if="errorMsg">{{ errorMsg }} — Try Again</span></b>
-      <b><span class="error-msg" v-if="purposeError">{{ purposeError }}</span></b>
     </div>
 
-    <!-- Button Login -->
+    <!-- Sign In -->
     <button class="btn-login" v-if="!loggedIn" @click="$emit('submit')" :disabled="loading">
       {{ loading ? 'Verifying...' : 'Sign In' }}
     </button>
 
+    <!-- Success -->
     <div class="login-success" v-if="loggedIn">
       <span>✓</span>
       <span>Logged in as <strong>{{ studentId }}</strong> — <em>{{ purpose }}</em></span>
     </div>
 
-    <!-- Button Logout -->
-    <br><button class="btn-logout" v-if="loggedIn" @click="$emit('logout')">
+    <!-- Sign Out -->
+    <br>
+    <button class="btn-logout" v-if="loggedIn" @click="$emit('logout')">
       ← Sign Out
     </button>
 
@@ -67,7 +74,7 @@
 </template>
 
 <script>
-const PURPOSES = ['Research', 'Laboratory', 'Assignment', 'Others']
+const PURPOSES = ['Research', 'Laboratory', 'Others']
 
 export default {
   name: 'LoginForm',
@@ -78,12 +85,12 @@ export default {
     loggedIn:  { type: Boolean, default: false },
     loading:   { type: Boolean, default: false },
     errorMsg:  { type: String,  default: '' },
-    purpose:   { type: String,  default: '' },   
+    purpose:   { type: String,  default: '' },
   },
 
   emits: [
     'update:studentId',
-    'update:purpose',   
+    'update:purpose',
     'clear-error',
     'submit',
     'logout',
@@ -94,7 +101,6 @@ export default {
     return {
       isOpen:          false,
       selectedPurpose: this.purpose || '',
-      purposeError:    '',
       purposes:        PURPOSES,
     }
   },
@@ -116,12 +122,10 @@ export default {
     toggleDropdown() {
       if (!this.loggedIn) this.isOpen = !this.isOpen
     },
-
     choosePurpose(opt) {
       this.selectedPurpose = opt
-      this.purposeError    = ''
       this.isOpen          = false
-      this.$emit('update:purpose', opt)   // ← tell App.vue the chosen purpose
+      this.$emit('update:purpose', opt)
     },
   },
 }
@@ -154,7 +158,6 @@ export default {
   width: 100%;
 }
 
-/* ── Input + dropdown side by side ── */
 .input-row {
   display: flex;
   gap: 8px;
@@ -164,11 +167,10 @@ export default {
 
 .labels-row {
   display: flex;
-  gap: 7px;
+  gap: 8px;
   width: 75%;
 }
-
-.labels-row label { flex: 1; }
+.labels-row label  { flex: 1; }
 
 label {
   font-family: 'Poppins', sans-serif;
@@ -188,7 +190,7 @@ input {
   background: #b3d0bc;
   color: #0d0f14;
   outline: none;
-  flex: 1;                  /* takes remaining space */
+  flex: 1;
   min-width: 0;
   transition: border-color 0.2s, box-shadow 0.2s;
   letter-spacing: 0.06em;
@@ -199,11 +201,7 @@ input.valid    { border-color: #1a9c5a; box-shadow: 3px 3px 0 #1a9c5a; }
 input:disabled { opacity: 0.55; cursor: not-allowed; }
 
 /* ── Dropdown ── */
-.dropdown {
-  position: relative;
-  flex-shrink: 0;
-  width: 130px;
-}
+.dropdown { position: relative; flex-shrink: 0; width: 130px; }
 
 .drop-btn {
   width: 100%;
@@ -227,11 +225,7 @@ input:disabled { opacity: 0.55; cursor: not-allowed; }
 .drop-btn:hover:not(:disabled) { background: #004d17; }
 .drop-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
-.arrow {
-  display: inline-block;
-  font-size: 10px;
-  transition: transform 0.2s;
-}
+.arrow { display: inline-block; font-size: 10px; transition: transform 0.2s; }
 .arrow.open { transform: rotate(180deg); }
 
 .drop-menu {
@@ -247,7 +241,6 @@ input:disabled { opacity: 0.55; cursor: not-allowed; }
   box-shadow: 0 4px 12px rgba(0,0,0,0.12);
   overflow: hidden;
 }
-
 .drop-menu li {
   padding: 9px 14px;
   cursor: pointer;
@@ -327,20 +320,4 @@ input:disabled { opacity: 0.55; cursor: not-allowed; }
   transition: all 0.15s;
 }
 .btn-logout:hover { border-color: #0d0f14; color: #0d0f14; }
-
-.btn-back {
-  font-family: 'Poppins', sans-serif;
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  background: transparent;
-  border: none;
-  color: #aaa;
-  cursor: pointer;
-  padding: 10px;
-  margin-top: 4px;
-  transition: color 0.15s;
-}
-.btn-back:hover { color: #00611E; }
 </style>
