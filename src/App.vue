@@ -27,18 +27,9 @@
     </div>
 
     <!-- LoginForm -->
-    <LoginForm
-      v-if="selectedRole"
-      v-model:studentId="studentId"
-      v-model:purpose="purpose"
-      :role="selectedRole"
-      :logged-in="loggedIn"
-      :loading="loading"
-      :error-msg="errorMsg"
-      @clear-error="errorMsg = ''"
-      @submit="handleLogin"
-      @logout="handleLogout"
-    />
+    <LoginForm v-if="selectedRole" v-model:studentId="studentId" v-model:purpose="purpose" :role="selectedRole"
+      :logged-in="loggedIn" :loading="loading" :error-msg="errorMsg" @clear-error="errorMsg = ''" @submit="handleLogin"
+      @logout="handleLogout" />
 
     <!-- Welcome message after login -->
     <transition name="banner">
@@ -51,15 +42,10 @@
     <div class="log-panel" v-if="logs.length">
       <div class="log-header">
         <span class="log-title">Access Log</span>
-          <button class="btn-clear" @click="clearLogs">Clear</button>
+        <button class="btn-clear" @click="clearLogs">Clear</button>
       </div>
       <div class="log-list">
-        <div
-          class="log-entry"
-          v-for="(entry, i) in [...logs].reverse()"
-          :key="i"
-          :class="entry.status.toLowerCase()"
-        >
+        <div class="log-entry" v-for="(entry, i) in [...logs].reverse()" :key="i" :class="entry.status.toLowerCase()">
           <span class="log-status" :class="entry.status.toLowerCase()">{{ entry.status }}</span>
           <span class="log-pc">PC{{ entry.pcNumber }}</span>
           <span class="log-id">{{ entry.username }}</span>
@@ -84,7 +70,7 @@ const EMAIL_DOMAIN = '@bma.edu.ph'
 
 const REGISTERED_IDS = {
   applicant: ['APP-2026-0001', 'APP-2026-0002', 'APP-2026-0003'],
-  student:   ['23132.cruz', '24004.jimenez', '12345.rivera'],
+  student: ['23132.cruz', '24004.jimenez', '12345.rivera', 'STU-2026-0001'],
 }
 
 export default {
@@ -94,14 +80,14 @@ export default {
   data() {
     return {
       selectedRole: null,
-      studentId:    '',     
-      username:     '',     
-      purpose:      '',
-      loggedIn:     false,
-      loading:      false,
-      errorMsg:     '',
-      logs:         [],
-      currentYear:  new Date().getFullYear(),
+      studentId: '',
+      username: '',
+      purpose: '',
+      loggedIn: false,
+      loading: false,
+      errorMsg: '',
+      logs: [],
+      currentYear: new Date().getFullYear(),
     }
   },
 
@@ -136,9 +122,9 @@ export default {
 
     today() {
       return new Date().toLocaleDateString('en-PH', {
-        year:  'numeric',
+        year: 'numeric',
         month: '2-digit',
-        day:   '2-digit',
+        day: '2-digit',
       })
     },
 
@@ -147,10 +133,10 @@ export default {
       const entry = {
         pcNumber: PC_NUMBER,          // which computer
         username,                     // cleaned username e.g. 23132.cruz
-        purpose:  this.purpose || '—',
-        timeIn:   this.now(),
-        date:     this.today(),
-        status,                        // SUCCESS | FAILED | LOGOUT
+        purpose: this.purpose || '—',
+        timeIn: this.now(),
+        date: this.today(),
+        status: status || "UNKNOWN",                        // SUCCESS | FAILED | LOGOUT
       }
       this.logs.push(entry)
       localStorage.setItem('bma_logs', JSON.stringify(this.logs))
@@ -160,10 +146,10 @@ export default {
     selectRole(role) {
       if (this.loggedIn) return
       this.selectedRole = role
-      this.studentId    = ''
-      this.username     = ''
-      this.purpose      = ''
-      this.errorMsg     = ''
+      this.studentId = ''
+      this.username = ''
+      this.purpose = ''
+      this.errorMsg = ''
     },
 
     async handleLogin() {
@@ -188,18 +174,18 @@ export default {
       const validIds = REGISTERED_IDS[this.selectedRole] || []
 
       if (validIds.includes(cleaned)) {
-        this.username  = cleaned           // save cleaned version
+        this.username = cleaned           // save cleaned version
         this.studentId = cleaned           // update input display too
-        this.loggedIn  = true
+        this.loggedIn = true
 
         const entry = this.addLog('SUCCESS', cleaned)
 
         // ── Send to your API ──────────────────────────────────────────────
         try {
           await fetch('YOUR_API_URL_HERE', {
-            method:  'POST',
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify(entry),
+            body: JSON.stringify(entry),
           })
         } catch (err) {
           console.warn('Offline — entry not sent to API.')
@@ -216,18 +202,18 @@ export default {
     async handleLogout() {
       const entry = this.addLog('LOGOUT', this.username)
 
-      this.loggedIn  = false
+      this.loggedIn = false
       this.studentId = ''
-      this.username  = ''
-      this.purpose   = ''
-      this.errorMsg  = ''
+      this.username = ''
+      this.purpose = ''
+      this.errorMsg = ''
 
       // ── Send logout to your API ───────────────────────────────────────
       try {
         await fetch('YOUR_API_URL_HERE', {
-          method:  'POST',
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify(entry),
+          body: JSON.stringify(entry),
         })
       } catch (e) { }
     },
@@ -242,7 +228,13 @@ export default {
 
 <!-- ── Global styles ── -->
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 body {
   font-family: 'Poppins', sans-serif;
@@ -275,7 +267,10 @@ body {
   overflow: hidden;
 }
 
-.app-wrapper > * { position: relative; z-index: 1; }
+.app-wrapper>* {
+  position: relative;
+  z-index: 1;
+}
 
 /* ── Page Header ── */
 .page-header {
@@ -310,7 +305,11 @@ body {
   line-height: 1;
   letter-spacing: 0.04em;
 }
-.page-title .green { color: #00611E; font-style: normal; }
+
+.page-title .green {
+  color: #00611E;
+  font-style: normal;
+}
 
 .page-desc {
   font-family: 'AllrounderMonumentTest-Medium', sans-serif;
@@ -321,7 +320,11 @@ body {
 }
 
 /* ── Role Buttons ── */
-.field-btn { display: flex; gap: 10px; width: 90%; }
+.field-btn {
+  display: flex;
+  gap: 10px;
+  width: 90%;
+}
 
 .btn-roles {
   font-family: 'Poppins', sans-serif;
@@ -340,6 +343,7 @@ body {
   gap: 12px;
   transition: all 0.2s ease;
 }
+
 .btn-roles.active {
   background: #ffffff;
   color: #00611E;
@@ -361,14 +365,25 @@ body {
   width: 100%;
   text-align: center;
 }
-.banner-enter-active { transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-.banner-leave-active { transition: all 0.2s ease; }
-.banner-enter-from, .banner-leave-to { opacity: 0; transform: translateY(-10px); }
+
+.banner-enter-active {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.banner-leave-active {
+  transition: all 0.2s ease;
+}
+
+.banner-enter-from,
+.banner-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
 
 /* ── Access Log ── */
 .log-panel {
   position: fixed;
-  bottom: 25%;
+  bottom: 35%;
   right: 30px;
   transform: translateY(-50%);
   width: 440px;
@@ -382,11 +397,22 @@ body {
 }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateY(-50%) translateX(20px); }
-  to   { opacity: 1; transform: translateY(-50%) translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
 }
 
-.log-header { display: flex; justify-content: space-between; align-items: center; }
+.log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
 .log-title {
   font-family: 'Poppins', sans-serif;
@@ -409,7 +435,11 @@ body {
   cursor: pointer;
   transition: all 0.15s;
 }
-.btn-clear:hover { border-color: #e84b2a; color: #e84b2a; }
+
+.btn-clear:hover {
+  border-color: #e84b2a;
+  color: #e84b2a;
+}
 
 .log-list {
   display: flex;
@@ -418,9 +448,18 @@ body {
   max-height: 200px;
   overflow-y: auto;
 }
-.log-list::-webkit-scrollbar       { width: 3px; }
-.log-list::-webkit-scrollbar-track { background: #1a1c24; }
-.log-list::-webkit-scrollbar-thumb { background: #333; }
+
+.log-list::-webkit-scrollbar {
+  width: 3px;
+}
+
+.log-list::-webkit-scrollbar-track {
+  background: #1a1c24;
+}
+
+.log-list::-webkit-scrollbar-thumb {
+  background: #333;
+}
 
 .log-entry {
   display: flex;
@@ -431,12 +470,25 @@ body {
   border-left: 3px solid #2a6ae8;
   animation: logIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-.log-entry.failed { border-left-color: #e84b2a; }
-.log-entry.logout { border-left-color: #555; }
+
+.log-entry.failed {
+  border-left-color: #e84b2a;
+}
+
+.log-entry.logout {
+  border-left-color: #555;
+}
 
 @keyframes logIn {
-  from { opacity: 0; transform: translateX(10px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .log-status {
@@ -448,9 +500,21 @@ body {
   text-transform: uppercase;
   flex-shrink: 0;
 }
-.log-status.success { background: rgba(26,156,90,0.2);  color: #4eda95; }
-.log-status.failed  { background: rgba(232,75,42,0.2);  color: #f47a5f; }
-.log-status.logout  { background: rgba(85,85,85,0.2);   color: #aaa; }
+
+.log-status.success {
+  background: rgba(26, 156, 90, 0.2);
+  color: #4eda95;
+}
+
+.log-status.failed {
+  background: rgba(232, 75, 42, 0.2);
+  color: #f47a5f;
+}
+
+.log-status.logout {
+  background: rgba(85, 85, 85, 0.2);
+  color: #aaa;
+}
 
 .log-pc {
   font-family: 'Poppins', sans-serif;
@@ -476,7 +540,7 @@ body {
   font-size: 9px;
   font-weight: 500;
   color: #7ab6f5;
-  background: rgba(42,106,232,0.15);
+  background: rgba(42, 106, 232, 0.15);
   padding: 2px 6px;
   border-radius: 3px;
   flex-shrink: 0;
