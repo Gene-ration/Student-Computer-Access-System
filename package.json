@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://Gene-ration.github.io/Student-Computer-Access-System",
+  "homepage": "https://gene-ration.github.io/Student-Computer-Access-System/",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
