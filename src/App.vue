@@ -38,23 +38,6 @@
       </div>
     </transition>
 
-    <!-- Access Log -->
-    <div class="log-panel" v-if="logs.length">
-      <div class="log-header">
-        <span class="log-title">Access Log</span>
-        <button class="btn-clear" @click="clearLogs">Clear</button>
-      </div>
-      <div class="log-list">
-        <div class="log-entry" v-for="(entry, i) in [...logs].reverse()" :key="i" :class="entry.status.toLowerCase()">
-          <span class="log-status" :class="entry.status.toLowerCase()">{{ entry.status }}</span>
-          <span class="log-pc">PC{{ entry.pcNumber }}</span>
-          <span class="log-id">{{ entry.username }}</span>
-          <span class="log-purpose" v-if="entry.purpose">{{ entry.purpose }}</span>
-          <span class="log-time">{{ entry.timeIn }}</span>
-        </div>
-      </div>
-    </div>
-
     <div class="app-footer">
       © {{ currentYear }} Baliwag Maritime Academy · Powered by Vue.js
     </div>
@@ -86,7 +69,6 @@ export default {
       loggedIn: false,
       loading: false,
       errorMsg: '',
-      logs: [],
       currentYear: new Date().getFullYear(),
     }
   },
@@ -136,7 +118,7 @@ export default {
         purpose: this.purpose || '—',
         timeIn: this.now(),
         date: this.today(),
-        status: status || "UNKNOWN",                        // SUCCESS | FAILED | LOGOUT
+        status: status || "UNKNOWN",  // SUCCESS | FAILED | LOGOUT
       }
       this.logs.push(entry)
       localStorage.setItem('bma_logs', JSON.stringify(this.logs))
@@ -380,22 +362,6 @@ body {
   transform: translateY(-10px);
 }
 
-/* ── Access Log ── */
-.log-panel {
-  position: fixed;
-  bottom: 35%;
-  right: 30px;
-  transform: translateY(-50%);
-  width: 440px;
-  background: #0d0f14;
-  padding: 12px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-  z-index: 999;
-}
-
 @keyframes slideIn {
   from {
     opacity: 0;
@@ -408,77 +374,6 @@ body {
   }
 }
 
-.log-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.log-title {
-  font-family: 'Poppins', sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: #f5f2eb;
-}
-
-.btn-clear {
-  font-family: 'Poppins', sans-serif;
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  background: transparent;
-  border: 1px solid #333;
-  color: #555;
-  padding: 4px 8px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-clear:hover {
-  border-color: #e84b2a;
-  color: #e84b2a;
-}
-
-.log-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.log-list::-webkit-scrollbar {
-  width: 3px;
-}
-
-.log-list::-webkit-scrollbar-track {
-  background: #1a1c24;
-}
-
-.log-list::-webkit-scrollbar-thumb {
-  background: #333;
-}
-
-.log-entry {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 10px;
-  background: #161820;
-  border-left: 3px solid #2a6ae8;
-  animation: logIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.log-entry.failed {
-  border-left-color: #e84b2a;
-}
-
-.log-entry.logout {
-  border-left-color: #555;
-}
-
 @keyframes logIn {
   from {
     opacity: 0;
@@ -489,69 +384,6 @@ body {
     opacity: 1;
     transform: translateX(0);
   }
-}
-
-.log-status {
-  font-family: 'Poppins', sans-serif;
-  font-size: 8px;
-  letter-spacing: 0.12em;
-  font-weight: 600;
-  padding: 2px 5px;
-  text-transform: uppercase;
-  flex-shrink: 0;
-}
-
-.log-status.success {
-  background: rgba(26, 156, 90, 0.2);
-  color: #4eda95;
-}
-
-.log-status.failed {
-  background: rgba(232, 75, 42, 0.2);
-  color: #f47a5f;
-}
-
-.log-status.logout {
-  background: rgba(85, 85, 85, 0.2);
-  color: #aaa;
-}
-
-.log-pc {
-  font-family: 'Poppins', sans-serif;
-  font-size: 9px;
-  font-weight: 600;
-  color: #888;
-  flex-shrink: 0;
-  letter-spacing: 0.06em;
-}
-
-.log-id {
-  font-family: 'Poppins', sans-serif;
-  font-size: 11px;
-  color: #ccc;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.log-purpose {
-  font-family: 'Poppins', sans-serif;
-  font-size: 9px;
-  font-weight: 500;
-  color: #7ab6f5;
-  background: rgba(42, 106, 232, 0.15);
-  padding: 2px 6px;
-  border-radius: 3px;
-  flex-shrink: 0;
-  text-transform: capitalize;
-}
-
-.log-time {
-  font-family: 'Poppins', sans-serif;
-  font-size: 9px;
-  color: #444;
-  flex-shrink: 0;
 }
 
 /* ── Footer ── */
