@@ -57,7 +57,7 @@
     <button class="btn-login" v-if="!loggedIn" @click="$emit('submit')" :disabled="loading">
       {{ loading ? 'Verifying...' : 'Sign In' }}
     </button>
-
+    
     <!-- Success -->
     <div class="login-success" v-if="loggedIn">
       <span>✓</span>

@@ -38,6 +38,17 @@
       </div>
     </transition>
 
+    <!-- ── Shut Down Shows afte Sign Out ── -->
+    <transition name="fade-up">
+      <div class="shutdown-zone" v-if="showShutdown">
+        <p class="shutdown-hint">Session ended. You may now shut down this terminal.</p>
+        <button class="btn-shut-down" @click="handleShutDown" :disabled="shuttingDown">
+          <i class="fa-solid fa-power-off"></i>
+          {{ shuttingDown ? 'Shutting down…' : 'Shut Down' }}
+        </button>
+      </div>
+    </transition>
+
     <div class="app-footer">
       © {{ currentYear }} Baliwag Maritime Academy · Powered by Vue.js
     </div>
@@ -50,6 +61,11 @@ import LoginForm from './components/LoginForm.vue'
 
 const PC_NUMBER = '01'
 const EMAIL_DOMAIN = '@bma.edu.ph'
+
+/* backend */
+const SHUTDOWN_API = 'http://localhost:3001/shutdown'
+
+const LOG_API = 'URL_TO_LOG_API_ENDPOINT' // <-- REPLACE with your actual API endpoint for logging
 
 const REGISTERED_IDS = {
   applicant: ['APP-2026-0001', 'APP-2026-0002', 'APP-2026-0003'],
@@ -70,6 +86,10 @@ export default {
       loading: false,
       errorMsg: '',
       currentYear: new Date().getFullYear(),
+      logs: [],
+
+      showShutdown: false,   
+      shuttingDown: false,   
     }
   },
 
@@ -77,7 +97,6 @@ export default {
     this.focusInput()
     this.focuTimer = setInterval(this.focusInput, 5000)
 
-    // Load saved logs from localStorage
     const savedLogs = localStorage.getItem('bma_logs')
     if (savedLogs) {
       try { this.logs = JSON.parse(savedLogs) } catch (e) { this.logs = [] }
@@ -104,21 +123,18 @@ export default {
 
     today() {
       return new Date().toLocaleDateString('en-PH', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
+        year: 'numeric', month: '2-digit', day: '2-digit',
       })
     },
 
-    // ── Save log entry with all required fields ───────────────────────────
     addLog(status, username) {
       const entry = {
-        pcNumber: PC_NUMBER,          // which computer
-        username,                     // cleaned username e.g. 23132.cruz
+        pcNumber: PC_NUMBER,
+        username,
         purpose: this.purpose || '—',
         timeIn: this.now(),
         date: this.today(),
-        status: status || "UNKNOWN",  // SUCCESS | FAILED | LOGOUT
+        status: status || 'UNKNOWN',
       }
       this.logs.push(entry)
       localStorage.setItem('bma_logs', JSON.stringify(this.logs))
@@ -132,23 +148,18 @@ export default {
       this.username = ''
       this.purpose = ''
       this.errorMsg = ''
+      this.showShutdown = false   
     },
 
     async handleLogin() {
       if (this.loggedIn) return
       this.errorMsg = ''
+      this.showShutdown = false
 
       const cleaned = this.cleanUsername(this.studentId)
 
-      if (!cleaned) {
-        this.errorMsg = 'Please enter your username.'
-        return
-      }
-
-      if (!this.purpose) {
-        this.errorMsg = 'Please select a purpose.'
-        return
-      }
+      if (!cleaned) { this.errorMsg = 'Please enter your username.'; return }
+      if (!this.purpose) { this.errorMsg = 'Please select a purpose.'; return }
 
       this.loading = true
       await new Promise(r => setTimeout(r, 800))
@@ -156,21 +167,25 @@ export default {
       const validIds = REGISTERED_IDS[this.selectedRole] || []
 
       if (validIds.includes(cleaned)) {
-        this.username = cleaned           // save cleaned version
-        this.studentId = cleaned           // update input display too
+        this.username = cleaned
+        this.studentId = cleaned
         this.loggedIn = true
 
         const entry = this.addLog('SUCCESS', cleaned)
 
-        // ── Send to your API ──────────────────────────────────────────────
         try {
-          await fetch('YOUR_API_URL_HERE', {
+          await fetch(LOG_API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(entry),
           })
         } catch (err) {
           console.warn('Offline — entry not sent to API.')
+        }
+        if (window.electronAPI?.minimize) {
+          window.electronAPI.minimize()
+        } else {
+          window.blur()
         }
 
       } else {
@@ -190,14 +205,24 @@ export default {
       this.purpose = ''
       this.errorMsg = ''
 
-      // ── Send logout to your API ───────────────────────────────────────
+      this.showShutdown = true
+
       try {
-        await fetch('YOUR_API_URL_HERE', {
+        await fetch(LOG_API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(entry),
         })
-      } catch (e) { }
+      } catch (e) { /* offline */ }
+    },
+
+    async handleShutDown() {
+      this.shuttingDown = true
+      try {
+        await fetch(SHUTDOWN_API, { method: 'POST' })
+      } catch (e) {
+        console.info('Shutdown signal sent.')
+      }
     },
 
     clearLogs() {
@@ -333,6 +358,42 @@ body {
   cursor: default;
 }
 
+/* ── Shutdown zone (shown after logout) ── */
+.shutdown-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.shutdown-hint {
+  font-family: 'Poppins', sans-serif;
+  font-size: 12px;
+  color: #888;
+  letter-spacing: 0.04em;
+}
+
+.btn-shut-down {
+  font-family: 'Poppins', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 13px 32px;
+  background: #e84b2a;
+  color: #f5f2eb;
+  border: 2px solid #e84b2a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-shut-down:hover { background: #c1270b; border-color: #c1270b; }
+.btn-shut-down:disabled { opacity: 0.45; cursor: not-allowed; }
+
 /* ── Welcome Banner ── */
 .welcome-banner {
   position: fixed;
@@ -348,43 +409,16 @@ body {
   text-align: center;
 }
 
-.banner-enter-active {
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.banner-leave-active {
-  transition: all 0.2s ease;
-}
-
+/* ── Transitions ── */
+.banner-enter-active { transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+.banner-leave-active { transition: all 0.2s ease; }
 .banner-enter-from,
-.banner-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
-}
+.banner-leave-to { opacity: 0; transform: translateY(-10px); }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-50%) translateX(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
-  }
-}
-
-@keyframes logIn {
-  from {
-    opacity: 0;
-    transform: translateX(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
+.fade-up-enter-active { transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1); }
+.fade-up-leave-active { transition: all 0.2s ease; }
+.fade-up-enter-from,
+.fade-up-leave-to { opacity: 0; transform: translateY(12px); }
 
 /* ── Footer ── */
 .app-footer {
