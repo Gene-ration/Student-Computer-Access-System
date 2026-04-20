@@ -41,7 +41,6 @@
     <!-- ── Shut Down Shows afte Sign Out ── -->
     <transition name="fade-up">
       <div class="shutdown-zone" v-if="showShutdown">
-        <p class="shutdown-hint">Session ended. You may now shut down this terminal.</p>
         <button class="btn-shut-down" @click="handleShutDown" :disabled="shuttingDown">
           <i class="fa-solid fa-power-off"></i>
           {{ shuttingDown ? 'Shutting down…' : 'Shut Down' }}
@@ -65,7 +64,7 @@ const EMAIL_DOMAIN = '@bma.edu.ph'
 /* backend */
 const SHUTDOWN_API = 'http://localhost:3001/shutdown'
 
-const LOG_API = 'URL_TO_LOG_API_ENDPOINT' // <-- REPLACE with your actual API endpoint for logging
+const LOG_API = 'URL_TO_LOG_API_ENDPOINT' // <-- REPLACE with your API endpoint for logging
 
 const REGISTERED_IDS = {
   applicant: ['APP-2026-0001', 'APP-2026-0002', 'APP-2026-0003'],
@@ -148,7 +147,7 @@ export default {
       this.username = ''
       this.purpose = ''
       this.errorMsg = ''
-      this.showShutdown = false   
+      this.showShutdown = true   
     },
 
     async handleLogin() {
@@ -358,20 +357,13 @@ body {
   cursor: default;
 }
 
-/* ── Shutdown zone (shown after logout) ── */
+/* ── Shutdown zone ── */
 .shutdown-zone {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
   margin-top: 8px;
-}
-
-.shutdown-hint {
-  font-family: 'Poppins', sans-serif;
-  font-size: 12px;
-  color: #888;
-  letter-spacing: 0.04em;
 }
 
 .btn-shut-down {
